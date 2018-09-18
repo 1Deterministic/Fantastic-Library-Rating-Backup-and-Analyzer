@@ -40,8 +40,6 @@ class Tag:
             self.lenght = 0
             self.rating = 0
 
-
-
     # writes the current properties to the file
     def write(self):
         # removes a known problematic frame

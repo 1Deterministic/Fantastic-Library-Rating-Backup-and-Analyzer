@@ -1,4 +1,5 @@
 import _tag
+import _counter
 
 import collections
 import sqlite3
@@ -167,7 +168,7 @@ if __name__ == "__main__":
         print("Done!")
 
         # creates the xlsx file
-        workbook = xlsxwriter.Workbook("music_database.xlsx")
+        workbook = xlsxwriter.Workbook("analytics.xlsx")
         # adds a new sheet to the file
         worksheet = workbook.add_worksheet("all tracks info")
 
@@ -202,52 +203,95 @@ if __name__ == "__main__":
         # average track rating per artist ==============================================================================
         worksheet = workbook.add_worksheet("average track rating per artist")
         row = 1
-        # writes the headers of the table
+        # writes the headers of the page
         worksheet.write("A" + str(row), "Artist")
         worksheet.write("B" + str(row), "Average Rating")
         row += 1
 
-        # inserts the values in the spreadsheet, starting from the row 2
+        # gets the sum of valid ratings and the total of tracks
+        rating_sum_counter = _counter.Counter()
+        tracks_number_counter = _counter.Counter()
         for artist in data.keys():
-            worksheet.write("A" + str(row), artist)
-
-            sum = 0
-            tracks = 0
             for album in data[artist]:
                 for title in data[artist][album]:
-                    # consider only valid ratings (0 is not rated yet)
+                    # consider only valid ratings (0 means it's not rated yet)
                     if int(data[artist][album][title]["rating"]) > 0:
-                        sum += int(data[artist][album][title]["rating"])
-                        tracks += 1
+                        rating_sum_counter.push(artist, int(data[artist][album][title]["rating"]))
+                        tracks_number_counter.push(artist)
 
-            worksheet.write("B" + str(row), sum / tracks if tracks > 0 else 0)
+        # gets the averages per artist
+        average_ratings = dict()
+        for n in range(0, len(rating_sum_counter.entries)):
+            average_ratings[rating_sum_counter.entries[n].name] = rating_sum_counter.entries[n].number / tracks_number_counter.entries[n].number if tracks_number_counter.entries[n].number > 0 else 0
+
+        # gets the sorted list
+        sorted_average_ratings = sorted(average_ratings.items(), key=lambda value: value[1], reverse=True)
+
+        # fills the spreadsheet
+        data_initial_row = row
+        for a in sorted_average_ratings:
+            worksheet.write("A" + str(row), a[0])
+            worksheet.write("B" + str(row), a[1])
             row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "average track rating",
+            'categories': "='average track rating per artist'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='average track rating per artist'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Artist'})
+        chart.set_x_axis({'name': 'Average Rating'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 5})
 
 
-        # average album rating per artist ==============================================================================
-        worksheet = workbook.add_worksheet("average album rating per artist")
+        # average track rating per album ===============================================================================
+        worksheet = workbook.add_worksheet("average track rating per album")
         row = 1
-        # writes the headers of the table
-        worksheet.write("A" + str(row), "Artist")
-        worksheet.write("B" + str(row), "Album")
-        worksheet.write("C" + str(row), "Average Rating")
+        # writes the headers of the page
+        worksheet.write("A" + str(row), "Album")
+        worksheet.write("B" + str(row), "Average Rating")
         row += 1
 
-        # inserts the values in the spreadsheet, starting from the row 2
+        # gets the sum of valid ratings and the total of tracks
+        rating_sum_counter = _counter.Counter()
+        tracks_number_counter = _counter.Counter()
         for artist in data.keys():
-            worksheet.write("A" + str(row), artist)
             for album in data[artist]:
-                worksheet.write("B" + str(row), album)
-
-                sum = 0
-                tracks = 0
                 for title in data[artist][album]:
+                    # consider only valid ratings (0 means it's not rated yet)
                     if int(data[artist][album][title]["rating"]) > 0:
-                        sum += int(data[artist][album][title]["rating"])
-                        tracks += 1
+                        rating_sum_counter.push(album, int(data[artist][album][title]["rating"]))
+                        tracks_number_counter.push(album)
 
-                worksheet.write("C" + str(row), sum / tracks if tracks > 0 else 0)
-                row += 1
+        # gets the averages per artist
+        average_ratings = dict()
+        for n in range(0, len(rating_sum_counter.entries)):
+            average_ratings[rating_sum_counter.entries[n].name] = rating_sum_counter.entries[n].number / tracks_number_counter.entries[n].number if tracks_number_counter.entries[n].number > 0 else 0
+
+        # gets the sorted list
+        sorted_average_ratings = sorted(average_ratings.items(), key=lambda value: value[1], reverse=True)
+
+        # fills the spreadsheet
+        data_initial_row = row
+        for a in sorted_average_ratings:
+            worksheet.write("A" + str(row), a[0])
+            worksheet.write("B" + str(row), a[1])
+            row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "average track rating",
+            'categories': "='average track rating per album'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='average track rating per album'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Album'})
+        chart.set_x_axis({'name': 'Average Rating'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 2})
 
 
         # number of 5-star tracks per artist ===========================================================================
@@ -258,52 +302,280 @@ if __name__ == "__main__":
         worksheet.write("B" + str(row), "Number of 5-star tracks")
         row += 1
 
-        # inserts the values in the spreadsheet, starting from the row 2
+        counter = _counter.Counter()
         for artist in data.keys():
-            worksheet.write("A" + str(row), artist)
-
-            sum = 0
             for album in data[artist]:
                 for title in data[artist][album]:
                     if int(data[artist][album][title]["rating"]) == 5:
-                        sum += 1
+                        counter.push(artist)
 
-            worksheet.write("B" + str(row), sum)
+        sorted_number = sorted(counter.entries, key=lambda value: value.number, reverse=True)
+
+        data_initial_row = row
+        for c in sorted_number:
+            worksheet.write("A" + str(row), c.name)
+            worksheet.write("B" + str(row), c.number)
             row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Number of 5-star tracks",
+            'categories': "='# of 5-star tracks per artist'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='# of 5-star tracks per artist'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Artist'})
+        chart.set_x_axis({'name': 'Number of 5-star tracks'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 2})
 
 
-        """# lenght range and avg rating ===================================================================================
-        worksheet = workbook.add_worksheet("lenght range and avg rating")
+        # number of 5-star tracks per album ============================================================================
+        worksheet = workbook.add_worksheet("# of 5-star tracks per album")
         row = 1
         # writes the headers of the table
-        worksheet.write("A" + str(row), "Range")
-        worksheet.write("B" + str(row), "Number of tracks")
-        worksheet.write("C" + str(row), "Average rating")
+        worksheet.write("A" + str(row), "Album")
+        worksheet.write("B" + str(row), "Number of 5-star tracks")
         row += 1
 
-        # inserts the values in the spreadsheet, starting from the row 2
-        ranges = ["less than 1 minute", "1-2 minutes", "2-3 minutes", "3-4 minutes", "4-5 minutes", "more than 5 minutes"]
-        ranges_sums = [0, 0, 0, 0, 0, 0]
-        ranges_rating_total = [0, 0, 0, 0, 0, 0]
-
+        counter = _counter.Counter()
         for artist in data.keys():
             for album in data[artist]:
                 for title in data[artist][album]:
-                    if int(data[artist][album][title]["lenght"]) < 60: ranges_sums[0] += 1; ranges_rating_total[0] += int(data[artist][album][title]["rating"])
-                    elif int(data[artist][album][title]["lenght"]) < 120: ranges_sums[1] += 1; ranges_rating_total[1] += int(data[artist][album][title]["rating"])
-                    elif int(data[artist][album][title]["lenght"]) < 180: ranges_sums[2] += 1; ranges_rating_total[2] += int(data[artist][album][title]["rating"])
-                    elif int(data[artist][album][title]["lenght"]) < 240: ranges_sums[3] += 1; ranges_rating_total[3] += int(data[artist][album][title]["rating"])
-                    elif int(data[artist][album][title]["lenght"]) < 300: ranges_sums[4] += 1; ranges_rating_total[4] += int(data[artist][album][title]["rating"])
-                    elif int(data[artist][album][title]["lenght"]) >= 300: ranges_sums[5] += 1; ranges_rating_total[5] += int(data[artist][album][title]["rating"])
+                    if int(data[artist][album][title]["rating"]) == 5:
+                        counter.push(album)
 
-        index = 0
-        for r in ranges:
-            worksheet.write("A" + str(row), r)
-            worksheet.write("B" + str(row), ranges_sums[index])
-            worksheet.write("C" + str(row), ranges_rating_total[index] / ranges_sums[index] if ranges_sums[index] > 0 else 0)
-            index += 1
+        sorted_number = sorted(counter.entries, key=lambda value: value.number, reverse=True)
+
+        data_initial_row = row
+        for c in sorted_number:
+            worksheet.write("A" + str(row), c.name)
+            worksheet.write("B" + str(row), c.number)
             row += 1
-        """
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Number of 5-star tracks",
+            'categories': "='# of 5-star tracks per album'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='# of 5-star tracks per album'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Album'})
+        chart.set_x_axis({'name': 'Number of 5-star tracks'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 10})
+
+
+        # # of musics per rating =======================================================================================
+        worksheet = workbook.add_worksheet("# of musics per rating")
+        row = 1
+        # writes the headers of the table
+        worksheet.write("A" + str(row), "Rating")
+        worksheet.write("B" + str(row), "# of tracks")
+        row += 1
+
+        counter = _counter.Counter()
+        for artist in data.keys():
+            for album in data[artist]:
+                for title in data[artist][album]:
+                    counter.push(data[artist][album][title]["rating"])
+
+        sorted_number = sorted(counter.entries, key=lambda value: value.name, reverse=True)
+
+        data_initial_row = row
+        for c in sorted_number:
+            worksheet.write("A" + str(row), c.name)
+            worksheet.write("B" + str(row), c.number)
+            row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Number of tracks per rating",
+            'categories': "='# of musics per rating'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='# of musics per rating'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Rating'})
+        chart.set_x_axis({'name': 'Number of tracks'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 1, 'y_scale': 1})
+
+
+        # # of tracks per genre ========================================================================================
+        worksheet = workbook.add_worksheet("# of tracks per genre")
+        row = 1
+        # writes the headers of the table
+        worksheet.write("A" + str(row), "Genre")
+        worksheet.write("B" + str(row), "# of tracks")
+        row += 1
+
+        counter = _counter.Counter()
+        for artist in data.keys():
+            for album in data[artist]:
+                for title in data[artist][album]:
+                    counter.push(data[artist][album][title]["genre"])
+
+        sorted_number = sorted(counter.entries, key=lambda value: value.number, reverse=True)
+
+        data_initial_row = row
+        for c in sorted_number:
+            worksheet.write("A" + str(row), c.name)
+            worksheet.write("B" + str(row), c.number)
+            row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Number of tracks per genre",
+            'categories': "='# of tracks per genre'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='# of tracks per genre'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Artist'})
+        chart.set_x_axis({'name': 'Number of Tracks'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 2})
+
+
+        # # of tracks per lenght range =================================================================================
+        worksheet = workbook.add_worksheet("# of tracks per lenght range")
+        row = 1
+        worksheet.write("A" + str(row), "The lenght is inaccurate in songs with variable bit rate")
+        row += 1
+
+        # writes the headers of the table
+        worksheet.write("A" + str(row), "Range")
+        worksheet.write("B" + str(row), "Number of tracks")
+        row += 1
+
+        counter = _counter.Counter()
+        for artist in data.keys():
+            for album in data[artist]:
+                for title in data[artist][album]:
+                    if int(data[artist][album][title]["lenght"]) < 60: counter.push("0-1 minute")
+                    elif int(data[artist][album][title]["lenght"]) < 120: counter.push("1-2 minutes")
+                    elif int(data[artist][album][title]["lenght"]) < 180: counter.push("2-3 minutes")
+                    elif int(data[artist][album][title]["lenght"]) < 240: counter.push("3-4 minutes")
+                    elif int(data[artist][album][title]["lenght"]) < 300: counter.push("4-5 minutes")
+                    elif int(data[artist][album][title]["lenght"]) < 360: counter.push("5-6 minutes")
+                    elif int(data[artist][album][title]["lenght"]) < 420: counter.push("6-7 minutes")
+                    elif int(data[artist][album][title]["lenght"]) < 480: counter.push("7-8 minutes")
+                    elif int(data[artist][album][title]["lenght"]) >= 480: counter.push("more than 8 minutes")
+
+        sorted_number = sorted(counter.entries, key=lambda value: value.name, reverse=True)
+
+        data_initial_row = row
+        for c in sorted_number:
+            worksheet.write("A" + str(row), c.name)
+            worksheet.write("B" + str(row), c.number)
+            row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Number of tracks per lenght range",
+            'categories': "='# of tracks per lenght range'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='# of tracks per lenght range'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Range'})
+        chart.set_x_axis({'name': 'Number of Tracks'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 1})
+
+
+        # avg rating per lenght range ==================================================================================
+        worksheet = workbook.add_worksheet("avg rating per lenght range")
+        row = 1
+        worksheet.write("A" + str(row), "The lenght is inaccurate in songs with variable bit rate")
+        row += 1
+
+        # writes the headers of the table
+        worksheet.write("A" + str(row), "Range")
+        worksheet.write("B" + str(row), "Average Rating")
+        row += 1
+
+        rating_sum_counter = _counter.Counter()
+        tracks_number_counter = _counter.Counter()
+        for artist in data.keys():
+            for album in data[artist]:
+                for title in data[artist][album]:
+                    if int(data[artist][album][title]["rating"]) > 0:
+                        if int(data[artist][album][title]["lenght"]) < 60: tracks_number_counter.push("0-1 minute"); rating_sum_counter.push("0-1 minute", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 120: tracks_number_counter.push("1-2 minutes"); rating_sum_counter.push("1-2 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 180: tracks_number_counter.push("2-3 minutes"); rating_sum_counter.push("2-3 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 240: tracks_number_counter.push("3-4 minutes"); rating_sum_counter.push("3-4 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 300: tracks_number_counter.push("4-5 minutes"); rating_sum_counter.push("4-5 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 360: tracks_number_counter.push("5-6 minutes"); rating_sum_counter.push("5-6 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 420: tracks_number_counter.push("6-7 minutes"); rating_sum_counter.push("6-7 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) < 480: tracks_number_counter.push("7-8 minutes"); rating_sum_counter.push("7-8 minutes", int(data[artist][album][title]["rating"]))
+                        elif int(data[artist][album][title]["lenght"]) >= 480: tracks_number_counter.push("more than 8 minutes"); rating_sum_counter.push("more than 8 minutes", int(data[artist][album][title]["rating"]))
+
+        average_ratings = dict()
+        for n in range(0, len(rating_sum_counter.entries)):
+            average_ratings[rating_sum_counter.entries[n].name] = rating_sum_counter.entries[n].number / tracks_number_counter.entries[n].number if tracks_number_counter.entries[n].number > 0 else 0
+
+        # gets the sorted list
+        sorted_average_ratings = sorted(average_ratings.items(), key=lambda value: value[0], reverse=True)
+
+        data_initial_row = row
+        for a in sorted_average_ratings:
+            worksheet.write("A" + str(row), a[0])
+            worksheet.write("B" + str(row), a[1])
+            row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Average rating per lenght range",
+            'categories': "='avg rating per lenght range'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='avg rating per lenght range'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Range'})
+        chart.set_x_axis({'name': 'Average Rating'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 1})
+
+
+        # average rating per genre =====================================================================================
+        worksheet = workbook.add_worksheet("average rating per genre")
+        row = 1
+        # writes the headers of the table
+        worksheet.write("A" + str(row), "Genre")
+        worksheet.write("B" + str(row), "Average Rating")
+        row += 1
+
+        rating_sum_counter = _counter.Counter()
+        tracks_number_counter = _counter.Counter()
+        for artist in data.keys():
+            for album in data[artist]:
+                for title in data[artist][album]:
+                    if int(data[artist][album][title]["rating"]) > 0:
+                        rating_sum_counter.push(data[artist][album][title]["genre"], int(data[artist][album][title]["rating"]))
+                        tracks_number_counter.push(data[artist][album][title]["genre"])
+
+        average_ratings = dict()
+        for n in range(0, len(rating_sum_counter.entries)):
+            average_ratings[rating_sum_counter.entries[n].name] = rating_sum_counter.entries[n].number / tracks_number_counter.entries[n].number if tracks_number_counter.entries[n].number > 0 else 0
+
+        # gets the sorted list
+        sorted_average_ratings = sorted(average_ratings.items(), key=lambda value: value[1], reverse=True)
+
+        data_initial_row = row
+        for a in sorted_average_ratings:
+            worksheet.write("A" + str(row), a[0])
+            worksheet.write("B" + str(row), a[1])
+            row += 1
+        data_final_row = row
+
+        # creates the bar chart
+        chart = workbook.add_chart({'type': 'bar'})
+        chart.add_series({
+            "name": "Average rating per lenght range",
+            'categories': "='average rating per genre'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+            'values':"='average rating per genre'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+        chart.set_y_axis({'name': 'Genre'})
+        chart.set_x_axis({'name': 'Average Rating'})
+        worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 2})
 
         # closes the file
         workbook.close()
