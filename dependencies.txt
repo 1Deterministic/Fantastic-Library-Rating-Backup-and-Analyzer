@@ -1,0 +1,8 @@
+# these are the dependencies to run this program
+# all of them are available via pip (3) install
+
+eyed3
+xlsxwriter
+fuzzywuzzy (python-Levenshtein is also recommended)
+
+# naturally, python 3 is also required before all those
