@@ -1,7 +1,7 @@
 import math
 
 import eyed3
-from eyed3.id3 import ID3_V1_0, ID3_V1_1, ID3_V2_3, ID3_V2_4
+from eyed3.id3 import ID3_V1_0, ID3_V1_1, ID3_V2_3, ID3_V2_4, frames
 #from mutagen.mp3 import MP3
 
 class Tag:
@@ -46,15 +46,17 @@ class Tag:
         try: del(self.file.tag.frame_set[b'RGAD'])
         except: pass
 
-        if self.artist != "<none>": self.file.tag.artist = self.artist
-        if self.album != "<none>": self.file.tag.album = self.album
-        if self.title != "<none>": self.file.tag.title = self.title
-        if self.genre != "<none>": self.file.tag.genre = self.genre
-        self.file.tag.frame_set[b'POPM'][0].rating = self.rating * 51
-
-        self.file.tag.save()
-        # change to return correctly
-        return True
+        try:
+            if self.artist != "<none>": self.file.tag.artist = self.artist
+            if self.album != "<none>": self.file.tag.album = self.album
+            if self.title != "<none>": self.file.tag.title = self.title
+            if self.genre != "<none>": self.file.tag.genre = self.genre
+            self.file.tag.frame_set[b'POPM'] = frames.PopularityFrame()
+            self.file.tag.frame_set[b'POPM'][0].rating = self.rating * 51
+            self.file.tag.save()
+            return True
+        except:
+            return False
 
     # creates a string describing this tag
     def to_string(self):

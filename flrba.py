@@ -116,6 +116,10 @@ if __name__ == "__main__":
 
     # if restore_ratings was received instead
     elif restore_ratings_to:
+        artist_min_approximation_ratio = 95
+        album_min_approximation_ratio = 85
+        title_min_approximation_ratio = 70
+
         files = []
         print("Reading files...")
 
@@ -140,7 +144,7 @@ if __name__ == "__main__":
             # for every file identified in the folder received
             for f in files:
                 # will restore the rating if title, album and title match or if they are similar enough (when approximation was received)
-                if (approximation and (fuzz.ratio(line[0], f.title) > 90 and fuzz.ratio(line[1], f.album) > 90 and fuzz.ratio(line[2], f.artist) > 90)) or (line[0] == f.title and line[1] == f.album and line[2] == f.artist):
+                if (approximation and (fuzz.token_set_ratio(line[0], f.title) > title_min_approximation_ratio and fuzz.token_set_ratio(line[1], f.album) > album_min_approximation_ratio and fuzz.token_set_ratio(line[2], f.artist) > artist_min_approximation_ratio)) or (line[0] == f.title and line[1] == f.album and line[2] == f.artist):
                     f.rating = line[5];
                     if not f.write():
                         print("Error: could not restore rating to " + f.to_string())
