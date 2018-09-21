@@ -516,6 +516,42 @@ def export(cursor):
     chart.set_x_axis({'name': 'Average Rating'})
     worksheet.insert_chart('C1', chart, {'x_scale': 2, 'y_scale': 2})
 
+    # number of 5-star tracks per genre ============================================================================
+    page_name = "# of 5-star tracks per genre"
+    worksheet = workbook.add_worksheet(page_name)
+    row = 1
+    # writes the headers of the table
+    worksheet.write("A" + str(row), "Genre")
+    worksheet.write("B" + str(row), "Number of 5-star tracks")
+    row += 1
+
+    counter = _counter.Counter()
+    for artist in data.keys():
+        for album in data[artist]:
+            for title in data[artist][album]:
+                if int(data[artist][album][title]["rating"]) == 5:
+                    counter.push(data[artist][album][title]["genre"])
+
+    sorted_number = sorted(counter.entries, key=lambda value: value.number, reverse=True)
+
+    data_initial_row = row
+    for c in sorted_number:
+        worksheet.write("A" + str(row), c.name)
+        worksheet.write("B" + str(row), c.number)
+        row += 1
+    data_final_row = row
+
+    # creates the bar chart
+    chart = workbook.add_chart({'type': 'bar'})
+    chart.add_series({
+        "name": "Number of 5-star tracks",
+        'categories': "='" + page_name + "'!A" + str(data_initial_row) + ":A" + str(data_final_row),
+        'values': "='" + page_name + "'!$B$" + str(data_initial_row) + ":$B$" + str(data_final_row)})
+
+    chart.set_y_axis({'name': 'Genre'})
+    chart.set_x_axis({'name': 'Number of 5-star tracks'})
+    worksheet.insert_chart('C1', chart, {'x_scale': 1, 'y_scale': 3})
+
     # closes the file
     workbook.close()
     print("Done!")
