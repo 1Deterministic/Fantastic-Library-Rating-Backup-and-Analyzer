@@ -23,7 +23,7 @@ Existem três opções possíveis para utilização do programa: realizar o back
 * para realizar o backup, rode: `python3 flrba.py save_from /caminho/da/pasta`. Todos os arquivos `.mp3` dentro de `/caminho/da/pasta` e suas subpastas serão lidos e as informações guardadas no arquivo `database.db`, dentro da pasta do projeto.
 * para restaurar o backup, rode: `python3 flrba.py restore_ratings_to /caminho/da/pasta`. Todos os arquivos `.mp3` dentro de `/caminho/da/pasta` e suas subpastas serão lidos e, se encontrados na base de dados `database.db`, terão o rating restaurado. 
 * caso as tags sejam ligeiramente diferentes do backup, você pode usar o parâmetro `approximation` para aceitar tags por aproximação. Nesse caso, o comando fica `python3 flrba.py restore_ratings_to /caminho/da/pasta approximation`
-* para exportar as informações para uma tabela Excel, rode: `python3 flrba.py export_excel`. O arquivo estará na pasta do projeto, com o nome `analytics.xlsx`. Você pode ver screenshots **[aqui](https://github.com/1Deterministic/Fantastic-Library-Rating-Backup-and-Analyzer/Screenshots)**
+* para exportar as informações para uma tabela Excel, rode: `python3 flrba.py export_excel`. O arquivo estará na pasta do projeto, com o nome `analytics.xlsx`. Você pode ver screenshots **[aqui](https://github.com/1Deterministic/Fantastic-Library-Rating-Backup-and-Analyzer/tree/master/Screenshots)**
 
 ![Image](Screenshots/1.png)
 
@@ -51,7 +51,7 @@ There are three options to use this program: make a backup, restore the backup a
 * to make a backup, run: `python3 flrba.py save_from /path/to/folder`. All `.mp3` in `/path/to/folder` and its subfolders will be read and the information stored in the file `database.db`, in the project folder.
 * to restore the backup, run: `python3 flrba.py restore_ratings_to /path/to/folder`. All `.mp3` files in `/path/to/folder` and its subfolders will be read and, if present in the database `database.db`, will have their ratings restored
 * if the tags are slightly different from the ones in the backup, you can use the parameter `approximation` to accept tags by approximation. In this case, the comand is: `python3 flrba.py restore_ratings_to /path/to/folder approximation`
-* to export the database to a Excel spreadsheet, run: `python3 flrba.py export_excel`. The file will be in the project folder, with the name `analytics.xlsx`. You check for screenshots **[here](https://github.com/1Deterministic/Fantastic-Library-Rating-Backup-and-Analyzer/Screenshots)**
+* to export the database to a Excel spreadsheet, run: `python3 flrba.py export_excel`. The file will be in the project folder, with the name `analytics.xlsx`. You check for screenshots **[here](https://github.com/1Deterministic/Fantastic-Library-Rating-Backup-and-Analyzer/tree/master/Screenshots)**
 
 ![Image](Screenshots/1.png)
 
